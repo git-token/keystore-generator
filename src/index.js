@@ -125,7 +125,7 @@ export default class KeystoreGenerator {
   getAddress() {
     return new Promise((resolve, reject) => {
       jsonfile.readFileAsync(`${this.dirPath}/keystore.json`).then((serializedKeystore) => {
-        let ks = keystore.deserialize(serializedKeystore)
+        let ks = keystore.deserialize(JSON.stringify(serializedKeystore))
         resolve(ks.getAddresses()[0])
       }).catch((error) => {
         reject(error)
