@@ -67,7 +67,7 @@ function deriveKey({ dirPath, recoveryShare }) {
       password = sha3(`${secrets[0]}${secrets[1]}${recoveryShare}`).toString('hex')
       return jsonfile.readFileAsync(`${dirPath}/keystore.json`)
     }).then((serializedKeystore) => {
-      let ks = keystore.deserialize(serializedKeystore)
+      let ks = keystore.deserialize(JSON.stringify(serializedKeystore))
       ks.keyFromPassword(password, (error, dKey) => {
         if (error) { reject(error) }
         resolve(dKey)
@@ -125,7 +125,7 @@ export default class KeystoreGenerator {
   getAddress() {
     return new Promise((resolve, reject) => {
       jsonfile.readFileAsync(`${this.dirPath}/keystore.json`).then((serializedKeystore) => {
-        let ks = keystore.deserialize(serializedKeystore)
+        let ks = keystore.deserialize(JSON.stringify(serializedKeystore))
         resolve(ks.getAddresses()[0])
       }).catch((error) => {
         reject(error)
@@ -147,7 +147,7 @@ export default class KeystoreGenerator {
           jsonfile.readFileAsync(`${this.dirPath}/keystore.json`)
         )
       }).then((joinedData) => {
-        let ks = keystore.deserialize(joinedData[3])
+        let ks = keystore.deserialize(JSON.stringify(joinedData[3]))
         let tx = new Tx({
           nonce: nonce ? nonce : joinedData[0],
           gasPrice: gasPrice ? gasPrice : joinedData[1],
@@ -176,7 +176,7 @@ export default class KeystoreGenerator {
         deriveKey({ dirPath: this.dirPath, recoveryShare })
       ).then((joinedData) => {
         let address = joinedData[0]
-        let ks = keystore.deserialize(joinedData[1])
+        let ks = keystore.deserialize(JSON.stringify(joinedData[1]))
         let dKey = joinedData[2]
 
         return signing.signMsg(ks, dKey, messageHash, address)

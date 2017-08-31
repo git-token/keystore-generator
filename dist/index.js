@@ -12,6 +12,10 @@ var _createClass2 = require('babel-runtime/helpers/createClass');
 
 var _createClass3 = _interopRequireDefault(_createClass2);
 
+var _stringify = require('babel-runtime/core-js/json/stringify');
+
+var _stringify2 = _interopRequireDefault(_stringify);
+
 var _ethereumjsTx = require('ethereumjs-tx');
 
 var _ethereumjsTx2 = _interopRequireDefault(_ethereumjsTx);
@@ -97,7 +101,7 @@ function deriveKey(_ref3) {
       password = (0, _ethereumjsUtil.sha3)('' + secrets[0] + secrets[1] + recoveryShare).toString('hex');
       return jsonfile.readFileAsync(dirPath + '/keystore.json');
     }).then(function (serializedKeystore) {
-      var ks = _ethLightwallet.keystore.deserialize(serializedKeystore);
+      var ks = _ethLightwallet.keystore.deserialize((0, _stringify2.default)(serializedKeystore));
       ks.keyFromPassword(password, function (error, dKey) {
         if (error) {
           reject(error);
@@ -165,7 +169,7 @@ var KeystoreGenerator = function () {
 
       return new _bluebird2.default(function (resolve, reject) {
         jsonfile.readFileAsync(_this2.dirPath + '/keystore.json').then(function (serializedKeystore) {
-          var ks = _ethLightwallet.keystore.deserialize(serializedKeystore);
+          var ks = _ethLightwallet.keystore.deserialize((0, _stringify2.default)(serializedKeystore));
           resolve(ks.getAddresses()[0]);
         }).catch(function (error) {
           reject(error);
@@ -195,7 +199,7 @@ var KeystoreGenerator = function () {
 
           return (0, _bluebird.join)(_this3.eth.getTransactionCountAsync(from), _this3.eth.getGasPriceAsync(), deriveKey({ dirPath: _this3.dirPath, recoveryShare: recoveryShare }), jsonfile.readFileAsync(_this3.dirPath + '/keystore.json'));
         }).then(function (joinedData) {
-          var ks = _ethLightwallet.keystore.deserialize(joinedData[3]);
+          var ks = _ethLightwallet.keystore.deserialize((0, _stringify2.default)(joinedData[3]));
           var tx = new _ethereumjsTx2.default({
             nonce: nonce ? nonce : joinedData[0],
             gasPrice: gasPrice ? gasPrice : joinedData[1],
@@ -226,7 +230,7 @@ var KeystoreGenerator = function () {
       return new _bluebird2.default(function (resolve, reject) {
         (0, _bluebird.join)(_this4.getAddress(), jsonfile.readFileAsync(_this4.dirPath + '/keystore.json'), deriveKey({ dirPath: _this4.dirPath, recoveryShare: recoveryShare })).then(function (joinedData) {
           var address = joinedData[0];
-          var ks = _ethLightwallet.keystore.deserialize(joinedData[1]);
+          var ks = _ethLightwallet.keystore.deserialize((0, _stringify2.default)(joinedData[1]));
           var dKey = joinedData[2];
 
           return _ethLightwallet.signing.signMsg(ks, dKey, messageHash, address);
