@@ -1,160 +1,156 @@
 import Tx from 'ethereumjs-tx'
-import { ecsign } from 'ethereumjs-util'
+import { ecsign, sha3 } from 'ethereumjs-util'
 import Web3 from 'web3'
 import { keystore, signing } from 'eth-lightwallet'
-import Promise from 'bluebird'
-const fs = Promise.promisifyAll(require('fs'))
-const jsonfile = Promise.promisifyAll(require('jsonfile'))
-const join = Promise.join
+import Promise, { promisifyAll, join } from 'bluebird'
+import path from 'path'
+
+const fs = promisifyAll(require('fs'))
+const jsonfile = promisifyAll(require('jsonfile'))
+
+/**
+ * Private Functions
+ */
+
+function newKeystore({ password, dirPath }) {
+  return new Promise((resolve, reject) => {
+    keystore.createVault({ password }, (error, ks) => {
+      if (error) { reject(error) }
+      ks.keyFromPassword(password, (error, dKey) => {
+        if (error) { reject(error) }
+        ks.generateNewAddress(dKey, 1)
+        jsonfile.writeFileAsync(
+          `${dirPath}/keystore.json`,
+          ks.serialize(),
+          { flag: 'wx' }
+        ).then(() => {
+          resolve(true)
+        }).catch((error) => {
+          reject(error)
+        })
+      })
+    })
+  })
+}
+
+function saveSecrets({ secrets, dirPath }) {
+  return new Promise((resolve, reject) => {
+    if (secrets.length < 3) {
+      let error = new Error(`
+        Expected secrets to be an array of sha3 hashed seeds,
+        with a minimum length of 3 shares.
+      `)
+      reject(error)
+    }
+
+    // This recovery share is used to recreate the password that created the keystore
+    // It is required to recover the private key and sign transactions and messages
+    let recoveryShare = secrets.pop()
+
+    jsonfile.writeFileAsync(
+      `${dirPath}/secrets.json`,
+      secrets,
+      { flag: 'wx' }
+    ).then(() => {
+      resolve(recoveryShare)
+    }).catch((error) => {
+      reject(error)
+    })
+
+  })
+}
+
+function deriveKey({ dirPath, recoveryShare }) {
+  return new Promise((resolve, reject) => {
+    let password;
+    jsonfile.readFileAsync(`${dirPath}/secrets.json`).then((secrets) => {
+      password = sha3(`${secrets[0]}${secrets[1]}${recoveryShare}`).toString('hex')
+      return jsonfile.readFileAsync(`${dirPath}/keystore.json`)
+    }).then((serializedKeystore) => {
+      let ks = keystore.deserialize(serializedKeystore)
+      ks.keyFromPassword(password, (error, dKey) => {
+        if (error) { reject(error) }
+        resolve(dKey)
+      })
+    }).catch((error) => {
+      reject(error)
+    })
+  })
+}
 
 /**
  * KeystoreGenerator
  * @module
  */
 export default class KeystoreGenerator {
-  constructor ({
-    email,
-    username,
-    dirPath,
-    accountsPath,
-    keystoreFileName,
-    web3Provider
-  }) {
-
-    // Set variables
-    this.email = email
-    this.username = username
-    this.ks
-    this.password = ''
-    this.derivedKey
-    this.accounts = []
-    this.dirPath = dirPath
-    this.accountsPath = accountsPath
-    this.keystoreFileName = keystoreFileName
-    this.web3Provider = web3Provider
-    this.web3 = new Web3(new Web3.providers.HttpProvider(this.web3Provider))
-    this.eth = Promise.promisifyAll(this.web3.eth)
-  }
-
-  createKeystore (password) {
+  constructor ({ dirPath, web3Provider, recover }) {
     return new Promise((resolve, reject) => {
-      keystore.createVault({ password }, (error, ks) => {
-        if (error) { reject(error) }
-        this.password = password
-        this.ks = ks
-        resolve(this.ks)
-      })
-    })
-  }
+      // Set variables
+      this.dirPath = dirPath
+      this.web3Provider = web3Provider
+      this.web3 = new Web3(new Web3.providers.HttpProvider(this.web3Provider))
+      this.eth = Promise.promisifyAll(this.web3.eth)
 
-  getDerivedKey (password) {
-    return new Promise((resolve, reject) => {
-      if(!this.ks) {
-        let error = new Error(`
-          No keystore found! Cannot derive key without the keystore instance.
-          Please create a new vault or import a serialized keystore
-          `)
-        reject(error)
-      } else {
-        this.ks.keyFromPassword(password, (error, derivedKey) => {
-          if (error) { reject(error) }
-          this.derivedKey = derivedKey
-          resolve(this.derivedKey)
+      if(!recover) {
+        // Create New Keystore
+        let secret1 = sha3(keystore.generateRandomSeed()).toString('hex')
+        let secret2 = sha3(keystore.generateRandomSeed()).toString('hex')
+        let secret3 = sha3(keystore.generateRandomSeed()).toString('hex')
+
+        let password = sha3(`${secret1}${secret2}${secret3}`).toString('hex')
+        newKeystore({ password, dirPath: this.dirPath }).then((ks) => {
+          return saveSecrets({ secrets: [
+            secret1,
+            secret2,
+            secret3
+          ], dirPath: this.dirPath })
+        }).then(() => {
+          console.log('GitToken Signer Keystore Created!')
+          console.log('=================================')
+          console.log('SAVE THE FOLLOWING RECOVERY SHARE')
+          console.log('=================================')
+          console.log('=================================')
+          console.log(secret3)
+          console.log('=================================')
+          resolve(this)
+        }).catch((error) => {
+          reject(error)
         })
+      } else {
+        resolve(this)
       }
     })
   }
 
-  createAndSaveKeystore (password) {
+  getAddress() {
     return new Promise((resolve, reject) => {
-      this.createKeystore(password).then((_ks) => {
-        return this.getDerivedKey(password)
-      }).then((_derivedKey) => {
-        return this.ks.generateNewAddress(_derivedKey, 1)
-      }).then(() => {
-        return this.saveKeystore()
-      }).then(() => {
-        resolve(this.ks)
+      jsonfile.readFileAsync(`${this.dirPath}/keystore.json`).then((serializedKeystore) => {
+        let ks = keystore.deserialize(serializedKeystore)
+        resolve(ks.getAddresses()[0])
       }).catch((error) => {
         reject(error)
       })
     })
   }
 
-  // getPrivateKey (address) {
-  //   return new Promise((resolve, reject) => {
-  //
-  //   })
-  // }
-
-  importKeystore ({ dirPath, keystoreFileName }) {
+  signTransaction({ transaction, recoveryShare }) {
     return new Promise((resolve, reject) => {
-      let dirPath = dirPath ? dirPath : this.dirPath
-      let keystoreFileName = keystoreFileName ? keystoreFileName : this.keystoreFileName
-      jsonfile.readFileAsync(`${dirPath}/${keystoreFileName}`).then((savedKeystore) => {
-        this.ks = keystore.deserialize(savedKeystore['keystore'])
-        this.password = savedKeystore['password']
-        // console.log('importKeystore::this.ks', this.ks)
-        resolve(this.ks)
-      }).catch((error) => {
-        if (error.code == 'ENOENT') {
-          resolve(null)
-        } else {
-          reject(error)
-        }
-      })
-    })
-  }
+      const { to, value, nonce, data, gasPrice, gasLimit, chainId } = transaction
+      let from
+      this.getAddress().then((_from) => {
+        from = _from
 
-  saveKeystore () {
-    return new Promise((resolve, reject) => {
-      let serialized = this.ks.serialize()
-
-      jsonfile.writeFileAsync(
-        `${this.dirPath}/${this.keystoreFileName}`,{
-          password: this.password,
-          keystore: serialized
-        }
-      ).then(() => {
-        resolve(true)
-      }).catch((error) => {
-        reject(error)
-      })
-    })
-  }
-
-  saveAccounts (accounts) {
-    return new Promise((resolve, reject) => {
-      // let Accounts
-      // jsonfile.readFileAsync(`${this.dirPath}/${this.fileName}`).then((_accounts) => {
-        // Accounts = accounts ? [ ...accounts, ..._accounts ] : [ ...this.accounts, ..._accounts ]
-      //   return jsonfile.writeFileAsync(
-      //     `${this.dirPath}/${this.fileName}`,
-      //     Accounts
-      //   )
-      jsonfile.writeFileAsync(
-          `${this.dirPath}/${this.accountsPath}`,
-          [ ...accounts ],
-          { flag: 'a' }
-        ).then(() => {
-        resolve(Accounts)
-      }).catch((error) => {
-        reject(error)
-      })
-    })
-  }
-
-  signTransaction({ from, to, value, nonce, data, gasPrice, gasLimit, chainId }) {
-    return new Promise((resolve, reject) => {
-      // console.log('signTransaction::from', from)
-      join(
-        this.eth.getTransactionCountAsync(from),
-        this.eth.getGasPriceAsync(),
-        this.getDerivedKey(this.password)
-      ).then((joinedData) => {
+        return join(
+          this.eth.getTransactionCountAsync(from),
+          this.eth.getGasPriceAsync(),
+          deriveKey({ dirPath: this.dirPath, recoveryShare }),
+          jsonfile.readFileAsync(`${this.dirPath}/keystore.json`)
+        )
+      }).then((joinedData) => {
+        let ks = keystore.deserialize(joinedData[3])
         let tx = new Tx({
           nonce: nonce ? nonce : joinedData[0],
-          gasPrice: gasPrice ? gasPrice : joinedData[1].toNumber(),
+          gasPrice: gasPrice ? gasPrice : joinedData[1],
           from,
           to,
           value,
@@ -163,11 +159,31 @@ export default class KeystoreGenerator {
         })
         const serialized = `0x${tx.serialize().toString('hex')}`
         // console.log('signTransaction::serialized', serialized)
-        return signing.signTx(this.ks, joinedData[2], serialized, from)
+        return signing.signTx(ks, joinedData[2], serialized, from)
       }).then((signedTx) => {
         resolve(signedTx)
       }).catch((error) => {
         reject(error);
+      })
+    })
+  }
+
+  signMessage({ messageHash, recoveryShare }) {
+    return new Promise((resolve, reject) => {
+      join(
+        this.getAddress(),
+        jsonfile.readFileAsync(`${this.dirPath}/keystore.json`),
+        deriveKey({ dirPath: this.dirPath, recoveryShare })
+      ).then((joinedData) => {
+        let address = joinedData[0]
+        let ks = keystore.deserialize(joinedData[1])
+        let dKey = joinedData[2]
+
+        return signing.signMsg(ks, dKey, messageHash, address)
+      }).then((signedMessage) => {
+        resolve(signedMessage)
+      }).catch((error) => {
+        reject(error)
       })
     })
   }
