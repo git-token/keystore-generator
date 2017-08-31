@@ -21,7 +21,7 @@ function newKeystore({ password, dirPath }) {
         ks.generateNewAddress(dKey, 1)
         jsonfile.writeFileAsync(
           `${dirPath}/keystore.json`,
-          ks.serialize(),
+          JSON.parse(ks.serialize()),
           { flag: 'wx' }
         ).then(() => {
           resolve(true)
@@ -125,7 +125,7 @@ export default class KeystoreGenerator {
   getAddress() {
     return new Promise((resolve, reject) => {
       jsonfile.readFileAsync(`${this.dirPath}/keystore.json`).then((serializedKeystore) => {
-        let ks = keystore.deserialize(JSON.stringify(serializedKeystore))
+        let ks = keystore.deserialize(serializedKeystore)
         resolve(ks.getAddresses()[0])
       }).catch((error) => {
         reject(error)

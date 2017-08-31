@@ -35,15 +35,13 @@ var _path2 = _interopRequireDefault(_path);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var fs = (0, _bluebird.promisifyAll)(require('fs'));
-var jsonfile = (0, _bluebird.promisifyAll)(require('jsonfile'));
-
-process.env['NODE_NO_WARNINGS'] = 1;
+var jsonfile = (0, _bluebird.promisifyAll)(require('jsonfile')
 
 /**
  * Private Functions
  */
 
-function newKeystore(_ref) {
+);function newKeystore(_ref) {
   var password = _ref.password,
       dirPath = _ref.dirPath;
 
@@ -57,7 +55,7 @@ function newKeystore(_ref) {
           reject(error);
         }
         ks.generateNewAddress(dKey, 1);
-        jsonfile.writeFileAsync(dirPath + '/keystore.json', ks.serialize(), { flag: 'wx' }).then(function () {
+        jsonfile.writeFileAsync(dirPath + '/keystore.json', JSON.parse(ks.serialize()), { flag: 'wx' }).then(function () {
           resolve(true);
         }).catch(function (error) {
           reject(error);
