@@ -135,6 +135,18 @@ export default class KeystoreGenerator {
 
   signTransaction({ transaction, recoveryShare }) {
     return new Promise((resolve, reject) => {
+      if (!transaction || !transaction.to) {
+        reject(new Error(`
+          Invalid 'transaction' variable.
+          Requires a valid Ethereum transaction object
+        `))
+      }
+      if (!recoveryShare) {
+        reject(new Error(`
+          Invalid 'recoveryShare' variable.
+          Requires keccak256 hash of recovery share
+        `))
+      }
       const { to, value, nonce, data, gasPrice, gasLimit, chainId } = transaction
       let from
       this.getAddress().then((_from) => {
@@ -170,6 +182,16 @@ export default class KeystoreGenerator {
 
   signMessage({ messageHash, recoveryShare }) {
     return new Promise((resolve, reject) => {
+      if (!messageHash) {
+        reject(new Error(`
+          Invalid 'messageHash' variable. Requires keccak256 hash of message
+        `))
+      }
+      if (!recoveryShare) {
+        reject(new Error(`
+          Invalid 'recoveryShare' variable. Requires keccak256 hash of recovery share
+        `))
+      }
       join(
         this.getAddress(),
         jsonfile.readFileAsync(`${this.dirPath}/keystore.json`),

@@ -185,6 +185,12 @@ var KeystoreGenerator = function () {
           recoveryShare = _ref5.recoveryShare;
 
       return new _bluebird2.default(function (resolve, reject) {
+        if (!transaction || !transaction.to) {
+          reject(new Error('\n          Invalid \'transaction\' variable.\n          Requires a valid Ethereum transaction object\n        '));
+        }
+        if (!recoveryShare) {
+          reject(new Error('\n          Invalid \'recoveryShare\' variable.\n          Requires keccak256 hash of recovery share\n        '));
+        }
         var to = transaction.to,
             value = transaction.value,
             nonce = transaction.nonce,
@@ -228,6 +234,12 @@ var KeystoreGenerator = function () {
           recoveryShare = _ref6.recoveryShare;
 
       return new _bluebird2.default(function (resolve, reject) {
+        if (!messageHash) {
+          reject(new Error('\n          Invalid \'messageHash\' variable. Requires keccak256 hash of message\n        '));
+        }
+        if (!recoveryShare) {
+          reject(new Error('\n          Invalid \'recoveryShare\' variable. Requires keccak256 hash of recovery share\n        '));
+        }
         (0, _bluebird.join)(_this4.getAddress(), jsonfile.readFileAsync(_this4.dirPath + '/keystore.json'), deriveKey({ dirPath: _this4.dirPath, recoveryShare: recoveryShare })).then(function (joinedData) {
           var address = joinedData[0];
           var ks = _ethLightwallet.keystore.deserialize((0, _stringify2.default)(joinedData[1]));
