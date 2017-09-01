@@ -142,16 +142,21 @@ var KeystoreGenerator = function () {
         var secret3 = (0, _ethereumjsUtil.sha3)(_ethLightwallet.keystore.generateRandomSeed()).toString('hex');
 
         var password = (0, _ethereumjsUtil.sha3)('' + secret1 + secret2 + secret3).toString('hex');
+
         newKeystore({ password: password, dirPath: _this.dirPath }).then(function (ks) {
+          // Secrets 1&2 are saved; 3 is popped and printed to console for user to save
+          // Service can be restarted with recover == true to bypass this configuration setup.
+          // TODO: Write secret3 to std out for programmatic integration
+          // NOTE: Consider refactoring using Shamir Secrets for combinatorial recovery
           return saveSecrets({ secrets: [secret1, secret2, secret3], dirPath: _this.dirPath });
         }).then(function () {
-          console.log('GitToken Signer Keystore Created!');
-          console.log('=================================');
-          console.log('SAVE THE FOLLOWING RECOVERY SHARE');
-          console.log('=================================');
-          console.log('=================================');
+          console.log('=============== GITTOKEN SIGNER KEYSTORE CREATED ===============');
+          console.log('================================================================');
+          console.log('=============== SAVE THE FOLLOWING RECOVERY SHARE ==============');
+          console.log('================================================================');
+          console.log('================================================================');
           console.log(secret3);
-          console.log('=================================');
+          console.log('================================================================');
           resolve(_this);
         }).catch(function (error) {
           reject(error);
