@@ -212,7 +212,7 @@ var KeystoreGenerator = function () {
 
         var from = void 0;
         _this3.getAddress().then(function (_from) {
-          from = _from;
+          from = '0x' + _from;
 
           return (0, _bluebird.join)(_this3.eth.getTransactionCountAsync(from), _this3.eth.getGasPriceAsync(), deriveKey({ dirPath: _this3.dirPath, recoveryShare: recoveryShare }), jsonfile.readFileAsync(_this3.dirPath + '/keystore.json'));
         }).then(function (joinedData) {
@@ -227,8 +227,9 @@ var KeystoreGenerator = function () {
             gas: gasLimit
           });
           var serialized = '0x' + tx.serialize().toString('hex');
-          console.log('signTransaction::serialized', serialized);
-          console.log('signTransaction::ks, joinedData[2], serialized, from', ks, joinedData[2], serialized, from);
+
+          // console.log('signTransaction::serialized', serialized)
+          // console.log('signTransaction::ks, joinedData[2], serialized, from', ks, joinedData[2], serialized, from)
 
           return _ethLightwallet.signing.signTx(ks, joinedData[2], serialized, from);
         }).then(function (signedTx) {

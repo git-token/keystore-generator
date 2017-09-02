@@ -161,7 +161,7 @@ export default class KeystoreGenerator {
       const { to, value, nonce, data, gasPrice, gasLimit, chainId } = transaction
       let from
       this.getAddress().then((_from) => {
-        from = _from
+        from = `0x${_from}`
 
         return join(
           this.eth.getTransactionCountAsync(from),
@@ -181,8 +181,9 @@ export default class KeystoreGenerator {
           gas: gasLimit
         })
         const serialized = `0x${tx.serialize().toString('hex')}`
-        console.log('signTransaction::serialized', serialized)
-        console.log('signTransaction::ks, joinedData[2], serialized, from', ks, joinedData[2], serialized, from)
+
+        // console.log('signTransaction::serialized', serialized)
+        // console.log('signTransaction::ks, joinedData[2], serialized, from', ks, joinedData[2], serialized, from)
 
         return signing.signTx(ks, joinedData[2], serialized, from)
       }).then((signedTx) => {
