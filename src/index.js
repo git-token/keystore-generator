@@ -146,7 +146,7 @@ export default class KeystoreGenerator {
 
   signTransaction({ transaction, recoveryShare }) {
     return new Promise((resolve, reject) => {
-      if (!transaction || !transaction.to) {
+      if (!transaction || !transaction.from) {
         reject(new Error(`
           Invalid 'transaction' variable.
           Requires a valid Ethereum transaction object

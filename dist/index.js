@@ -196,7 +196,7 @@ var KeystoreGenerator = function () {
           recoveryShare = _ref5.recoveryShare;
 
       return new _bluebird2.default(function (resolve, reject) {
-        if (!transaction || !transaction.to) {
+        if (!transaction || !transaction.from) {
           reject(new Error('\n          Invalid \'transaction\' variable.\n          Requires a valid Ethereum transaction object\n        '));
         }
         if (!recoveryShare) {
