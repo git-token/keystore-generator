@@ -1,6 +1,6 @@
 {
   "name": "gittoken-keystore-generator",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "GitToken Keystore Generator",
   "main": "./dist/index.js",
   "scripts": {
