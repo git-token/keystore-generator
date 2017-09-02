@@ -152,8 +152,14 @@ var KeystoreGenerator = function () {
         }).then(function () {
           console.log('=============== GITTOKEN SIGNER KEYSTORE CREATED ===============');
           console.log('================================================================');
-          console.log('=============== SAVE THE FOLLOWING RECOVERY SHARE ==============');
+
+          return _this.getAddress();
+        }).then(function (address) {
+          console.log('==================== GITTOKEN WALLET ADDRESS ===================');
           console.log('================================================================');
+          console.log('0x' + address);
+          console.log('================================================================');
+          console.log('=============== SAVE THE FOLLOWING RECOVERY SHARE ==============');
           console.log('================================================================');
           console.log(secret3);
           console.log('================================================================');

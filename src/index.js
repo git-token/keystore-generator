@@ -112,8 +112,14 @@ export default class KeystoreGenerator {
         }).then(() => {
           console.log('=============== GITTOKEN SIGNER KEYSTORE CREATED ===============')
           console.log('================================================================')
-          console.log('=============== SAVE THE FOLLOWING RECOVERY SHARE ==============')
+
+          return this.getAddress()
+        }).then((address) => {
+          console.log('==================== GITTOKEN WALLET ADDRESS ===================')
           console.log('================================================================')
+          console.log(`0x${address}`)
+          console.log('================================================================')
+          console.log('=============== SAVE THE FOLLOWING RECOVERY SHARE ==============')
           console.log('================================================================')
           console.log(secret3)
           console.log('================================================================')
