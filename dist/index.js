@@ -59,7 +59,7 @@ var jsonfile = (0, _bluebird.promisifyAll)(require('jsonfile')
           reject(error);
         }
         ks.generateNewAddress(dKey, 1);
-        jsonfile.writeFileAsync(dirPath + '/keystore.json', JSON.parse(ks.serialize()), { flag: 'wx' }).then(function () {
+        jsonfile.writeFileAsync(dirPath + '/keystore.json', JSON.parse(ks.serialize()), { flag: 'w' }).then(function () {
           resolve(true);
         }).catch(function (error) {
           reject(error);
@@ -83,7 +83,7 @@ function saveSecrets(_ref2) {
     // It is required to recover the private key and sign transactions and messages
     var recoveryShare = secrets.pop();
 
-    jsonfile.writeFileAsync(dirPath + '/secrets.json', secrets, { flag: 'wx' }).then(function () {
+    jsonfile.writeFileAsync(dirPath + '/secrets.json', secrets, { flag: 'w' }).then(function () {
       resolve(recoveryShare);
     }).catch(function (error) {
       reject(error);

@@ -22,7 +22,7 @@ function newKeystore({ password, dirPath }) {
         jsonfile.writeFileAsync(
           `${dirPath}/keystore.json`,
           JSON.parse(ks.serialize()),
-          { flag: 'wx' }
+          { flag: 'w' }
         ).then(() => {
           resolve(true)
         }).catch((error) => {
@@ -50,7 +50,7 @@ function saveSecrets({ secrets, dirPath }) {
     jsonfile.writeFileAsync(
       `${dirPath}/secrets.json`,
       secrets,
-      { flag: 'wx' }
+      { flag: 'w' }
     ).then(() => {
       resolve(recoveryShare)
     }).catch((error) => {
