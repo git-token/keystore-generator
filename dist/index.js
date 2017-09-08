@@ -135,7 +135,7 @@ var KeystoreGenerator = function () {
       _this.web3 = new _web2.default(new _web2.default.providers.HttpProvider(_this.web3Provider));
       _this.eth = _bluebird2.default.promisifyAll(_this.web3.eth);
 
-      if (!recover) {
+      if (!recover || recover == 'false' || recover == 0) {
         // Create New Keystore
         var secret1 = (0, _ethereumjsUtil.sha3)(_ethLightwallet.keystore.generateRandomSeed()).toString('hex');
         var secret2 = (0, _ethereumjsUtil.sha3)(_ethLightwallet.keystore.generateRandomSeed()).toString('hex');

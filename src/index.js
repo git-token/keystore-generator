@@ -91,7 +91,7 @@ export default class KeystoreGenerator {
       this.web3 = new Web3(new Web3.providers.HttpProvider(this.web3Provider))
       this.eth = Promise.promisifyAll(this.web3.eth)
 
-      if(!recover) {
+      if(!recover || recover == 'false' || recover == 0) {
         // Create New Keystore
         const secret1 = sha3(keystore.generateRandomSeed()).toString('hex')
         const secret2 = sha3(keystore.generateRandomSeed()).toString('hex')
