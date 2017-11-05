@@ -83,54 +83,63 @@ function deriveKey({ dirPath, recoveryShare }) {
  * @module
  */
 export default class KeystoreGenerator {
-  constructor ({ dirPath, web3Provider, recover }) {
-    return new Promise((resolve, reject) => {
-      // Set variables
-      this.dirPath = dirPath
-      this.web3Provider = web3Provider
-      this.web3 = new Web3(new Web3.providers.HttpProvider(this.web3Provider))
-      this.eth = Promise.promisifyAll(this.web3.eth)
+  constructor ({ dirPath, torvaldsProvider, web3Provider, recover }) {
+    // Set variables
+    this.dirPath = dirPath
 
-      if(!recover || recover == 'false' || recover == 0) {
-        // Create New Keystore
-        const secret1 = sha3(keystore.generateRandomSeed()).toString('hex')
-        const secret2 = sha3(keystore.generateRandomSeed()).toString('hex')
-        const secret3 = sha3(keystore.generateRandomSeed()).toString('hex')
+    // Main Ethereum Network
+    this.web3Provider = web3Provider
+    this.web3 = new Web3(new Web3.providers.HttpProvider(this.web3Provider))
+    // promisified Alias for eth commands
+    this.eth = Promise.promisifyAll(this.web3.eth)
 
-        const password = sha3(`${secret1}${secret2}${secret3}`).toString('hex')
 
-        newKeystore({ password, dirPath: this.dirPath }).then((ks) => {
-          // Secrets 1&2 are saved; 3 is popped and printed to console for user to save
-          // Service can be restarted with recover == true to bypass this configuration setup.
-          // TODO: Write secret3 to std out for programmatic integration
-          // NOTE: Consider refactoring using Shamir Secrets for combinatorial recovery
-          return saveSecrets({ secrets: [
-            secret1,
-            secret2,
-            secret3
-          ], dirPath: this.dirPath })
-        }).then(() => {
-          console.log('=============== GITTOKEN SIGNER KEYSTORE CREATED ===============')
-          console.log('================================================================')
+    // Torvalds Network
+    this.torvaldsProvider = torvaldsProvider
+    this.torvaldsWeb3 = new Web3(new Web3.providers.HttpProvider(this.torvaldsProvider))
+    this.torvaldsEth = Promise.promisifyAll(this.torvaldsWeb3.eth)
 
-          return this.getAddress()
-        }).then((address) => {
-          console.log('==================== GITTOKEN WALLET ADDRESS ===================')
-          console.log('================================================================')
-          console.log(`0x${address}`)
-          console.log('================================================================')
-          console.log('=============== SAVE THE FOLLOWING RECOVERY SHARE ==============')
-          console.log('================================================================')
-          console.log(secret3)
-          console.log('================================================================')
-          resolve(this)
-        }).catch((error) => {
-          reject(error)
-        })
-      } else {
-        resolve(this)
-      }
-    })
+    this.ethProviders = {
+      ethereum: this.eth,
+      torvalds: this.torvaldsEth
+    }
+
+    if(!recover || recover == 'false' || recover == 0) {
+      // Create New Keystore
+      const secret1 = sha3(keystore.generateRandomSeed()).toString('hex')
+      const secret2 = sha3(keystore.generateRandomSeed()).toString('hex')
+      const secret3 = sha3(keystore.generateRandomSeed()).toString('hex')
+
+      const password = sha3(`${secret1}${secret2}${secret3}`).toString('hex')
+
+      newKeystore({ password, dirPath: this.dirPath }).then((ks) => {
+        // Secrets 1&2 are saved; 3 is popped and printed to console for user to save
+        // Service can be restarted with recover == true to bypass this configuration setup.
+        // TODO: Write secret3 to std out for programmatic integration
+        // NOTE: Consider refactoring using Shamir Secrets for combinatorial recovery
+        return saveSecrets({ secrets: [
+          secret1,
+          secret2,
+          secret3
+        ], dirPath: this.dirPath })
+      }).then(() => {
+        console.log('=============== GITTOKEN SIGNER KEYSTORE CREATED ===============')
+        console.log('================================================================')
+
+        return this.getAddress()
+      }).then((address) => {
+        console.log('==================== GITTOKEN WALLET ADDRESS ===================')
+        console.log('================================================================')
+        console.log(`0x${address}`)
+        console.log('================================================================')
+        console.log('=============== SAVE THE FOLLOWING RECOVERY SHARE ==============')
+        console.log('================================================================')
+        console.log(secret3)
+        console.log('================================================================')
+      }).catch((error) => {
+        console.log('Keystore Constructor Error', error)
+      })
+    }
   }
 
   getAddress() {
@@ -144,8 +153,14 @@ export default class KeystoreGenerator {
     })
   }
 
-  signTransaction({ transaction, recoveryShare }) {
+  signTransaction({ network, transaction, recoveryShare }) {
     return new Promise((resolve, reject) => {
+      if (!network) {
+        reject(new Error(`
+          Invalid 'network' variable.
+          Requires a network string of 'torvalds' or 'ethereum'
+        `))
+      }
       if (!transaction) {
         reject(new Error(`
           Invalid 'transaction' variable.
@@ -164,8 +179,8 @@ export default class KeystoreGenerator {
         from = `0x${_from}`
 
         return join(
-          this.eth.getTransactionCountAsync(from),
-          this.eth.getGasPriceAsync(),
+          this.ethProviders[network].getTransactionCountAsync(from),
+          this.ethProviders[network].getGasPriceAsync(),
           deriveKey({ dirPath: this.dirPath, recoveryShare }),
           jsonfile.readFileAsync(`${this.dirPath}/keystore.json`)
         )
@@ -224,17 +239,17 @@ export default class KeystoreGenerator {
     })
   }
 
-  getTransactionReceipt(txHash, count) {
+  getTransactionReceipt({ network, txHash, count }) {
     return new Promise((resolve, reject) => {
       if (count > 20000) {
         let error = new Error(`Could not find transaction receipt after 20000 iterations`)
         reject(error)
       } else {
-        this.eth.getTransactionReceiptAsync(txHash).then((txReceipt) => {
+        this.ethProviders[network].getTransactionReceiptAsync(txHash).then((txReceipt) => {
           if (txReceipt['blockNumber']) {
             resolve(txReceipt)
           } else {
-            return Promise.delay(1000, this.getTransactionReceipt(txHash, count++))
+            return Promise.delay(1000, this.getTransactionReceipt({ network, txHash, count: count++ }))
           }
         }).then((txReceipt) => {
           resolve(txReceipt)
