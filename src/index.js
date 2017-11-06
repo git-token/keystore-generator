@@ -246,7 +246,6 @@ export default class KeystoreGenerator {
         reject(error)
       } else {
         this.ethProviders[network].getTransactionReceiptAsync(txHash).then((txReceipt) => {
-          console.log('txReceipt', txReceipt)
           if (txReceipt && txReceipt['blockNumber']) {
             resolve(txReceipt)
           } else {

@@ -295,7 +295,6 @@ var KeystoreGenerator = function () {
           reject(error);
         } else {
           _this5.ethProviders[network].getTransactionReceiptAsync(txHash).then(function (txReceipt) {
-            console.log('txReceipt', txReceipt);
             if (txReceipt && txReceipt['blockNumber']) {
               resolve(txReceipt);
             } else {
