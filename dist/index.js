@@ -295,7 +295,8 @@ var KeystoreGenerator = function () {
           reject(error);
         } else {
           _this5.ethProviders[network].getTransactionReceiptAsync(txHash).then(function (txReceipt) {
-            if (txReceipt['blockNumber']) {
+            console.log('txReceipt', txReceipt);
+            if (txReceipt && txReceipt['blockNumber']) {
               resolve(txReceipt);
             } else {
               return _bluebird2.default.delay(1000, _this5.getTransactionReceipt({ network: network, txHash: txHash, count: count++ }));
