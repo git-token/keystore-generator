@@ -1,42 +1,32 @@
 const { sha3 } = require('ethereumjs-util')
-const KeyGen = require('../dist/index').default
-const join = require('bluebird').join
+const Promise = require('bluebird')
+const GitTokenKeystoreGenerator = require('../dist/index').default
 
-let wallet
-let recover = true
 
-new KeyGen({
+const wallet = new GitTokenKeystoreGenerator({
   web3Provider: 'http://138.68.225.133:8545',
-  dirPath: process.cwd(),
-  recover
-}).then((_wallet) => {
-  wallet = _wallet
-  return wallet.getAddress()
+  dirPath: `${process.cwd()}`
+  // recoveryShare: '5e83813bcb68db92f35dd9f92f933ac02f909134fe3023e192a1314ad091fdc9',
+  // address: '2aafef6e4fe04f801c90294747c98fbf75076843'
+})
 
-}).then((address) => {
-  console.log('address', address)
-  if(recover) {
-    return join(
-      wallet.signMessage({
-        messageHash: sha3('Hello, World'),
-        recoveryShare: '4a9c9de8036cc4eeb399961915c4f403dcd446fa533a4d4144b3aeb3078d680f'
-      }),
-      wallet.signTransaction({
-        transaction: {
-          to: '0x98678e7c5fb95dd45e5326e271c14edd0f70adc8',
-          data: null,
-          value: 1
-        },
-        recoveryShare: '4a9c9de8036cc4eeb399961915c4f403dcd446fa533a4d4144b3aeb3078d680f'
-      })
-    )
-  } else {
-    return null
-  }
-}).then((data) => {
 
-  console.log('data', data)
-
+Promise.delay(1000, wallet.sendTransaction({
+  to: '0x293723c04563e55e5bf652f0e22ab091255afa9a',
+  value: 1
+})).then((txReceipt) => {
+  console.log('txReceipt', txReceipt)
+  // txReceipt { blockHash: '0x1684eee43a3ea6ca54fa7c5e573e286f2d1f182e852b06be36887913b7a6e324',
+  // blockNumber: 9,
+  // contractAddress: null,
+  // cumulativeGasUsed: 21000,
+  // gasUsed: 21000,
+  // logs: [],
+  // logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+  // root: null,
+  // status: null,
+  // transactionHash: '0x984c49a69d640f5db55d3095f3e3657ce4c31ba75bee687913527adf745e78ca',
+  // transactionIndex: 0 }
 }).catch((error) => {
   console.log('error', error)
 })
